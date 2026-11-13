@@ -1,0 +1,6 @@
+{
+  "name": "Projeto Atenção",
+  "description": "Bateria neuropsicológica de inferência de regra latente, atenção seletiva, reversão, bloqueio e modelagem computacional com coleta local e envelopes criptografados.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,11 +1,38 @@
-<div align="center">
+# Projeto Atenção
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Bateria cognitiva de inferência de regra latente, atenção seletiva, reversão de contingências, aprendizagem probabilística, bloqueio (*blocking*) e controle executivo (Corsi, Dígitos Inversos e Velocidade), com modelagem computacional bayesiana e receptor de envelopes criptografados ponta a ponta.
 
-  <h1>Built with AI Studio</h2>
+## Execução rápida do pacote compilado
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+Se você baixou o arquivo `projeto-atencao-compilado.zip`, ele já inclui os artefatos compilados (`dist/` e `server.js`):
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+```bash
+npm install --omit=dev
+NODE_ENV=production node server.js
+```
 
-</div>
+O servidor inicia na porta `3000` (ou `PORT` definida no ambiente).
+
+## Configuração de variáveis pelo Admin
+
+Não é obrigatório editar arquivos `.env` manualmente. Ao acessar a aba **Ferramentas → Variáveis do Sistema (Admin)** na interface web, você pode definir e salvar diretamente no servidor:
+
+- `INVITE_KEY` (chave HMAC-SHA256 de 64 caracteres hexadecimais para assinar convites)
+- `ADMIN_TOKEN` (convertido em hash SHA-256 no servidor para proteger consultas e alterações)
+- `POLAR_PUBLIC_JWK` (chave pública RSA-OAEP-256 para criptografia dos envelopes)
+- `ENVELOPE_DATA_DIR`, `MAX_BYTES` e `MAX_FILES`
+
+As configurações salvas pelo painel ficam armazenadas em `./data/admin-config.json` (com permissão restrita `0600`) e passam a valer imediatamente. Caso prefira, variáveis de ambiente tradicionais (`.env`) também continuam compatíveis.
+
+## Desenvolvimento e recompilação
+
+```bash
+npm install
+npm run dev
+```
+
+Para recompilar frontend e servidor:
+
+```bash
+npm run build:compiled
+```

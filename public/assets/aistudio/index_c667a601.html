@@ -1,0 +1,448 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Projeto Atenção</title>
+<style>
+/* Instrumento de tarefa: visual único, cinza-azulado escuro e neutro, para manter o estímulo constante entre sessões. */
+:root{--bg:#1f2329;--panel:#2a2f37;--panel2:#343a44;--line:#454d59;--ink:#eceef1;--mute:#aab2be;--accent:#c1b0f7;--ok:#6fd8b2;--bad:#ffa492;--s1:#8fb8ff;--s2:#f2b24b;--bandA:#3b4557;--bandB:#4a4238;
+ --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);-webkit-text-size-adjust:100%}
+#app{min-height:100%;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:32px;line-height:1.15;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:21px;line-height:1.25;margin:0;text-wrap:balance}
+h3{font-size:16px;margin:0;color:var(--accent)}
+p{margin:0}
+.mute{color:var(--mute)}.small{font-size:14px}.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit;color:inherit}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:9px 16px;cursor:pointer;touch-action:manipulation}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#1d1a2b;font-weight:600}
+.btn.warn{border-color:var(--bad);color:var(--bad)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sess{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.st{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.st .id{font-family:var(--mono);font-size:14px;color:var(--mute)}
+.st b{font-weight:600}.st.next .id{color:var(--accent);font-weight:700}
+.tag{font-size:13px;color:var(--ok)}.tag.fl{color:var(--s2)}
+details{border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer;color:var(--accent)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--mute);min-width:0}
+input,select{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink);width:100%}
+/* tarefa */
+.task{min-height:calc(100dvh - 48px);display:flex;flex-direction:column;align-items:center;gap:clamp(12px,3vh,28px);max-width:760px;margin:0 auto;user-select:none;-webkit-user-select:none}
+.hud{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--mute)}
+.exit{background:none;border:0;color:var(--mute);cursor:pointer;font-size:14px;padding:4px 0}
+.cue{min-height:clamp(84px,14vh,116px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.word{font-size:clamp(22px,5vw,30px);font-weight:700;letter-spacing:.08em;min-height:1.4em}
+.ic{width:clamp(56px,12vw,76px);height:clamp(56px,12vw,76px);fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.syms{display:flex;gap:18px}
+.arr{display:flex;gap:6px}
+.slot{width:clamp(38px,11vw,66px);height:clamp(38px,11vw,66px);display:flex;align-items:center;justify-content:center;background:var(--panel);border-radius:4px}
+.slot .ic{width:78%;height:78%}
+.slot .neu{width:18%;height:18%;border-radius:50%;background:var(--line)}
+.slot.mask{background:repeating-linear-gradient(45deg,var(--mute) 0 3px,var(--panel) 3px 7px),repeating-linear-gradient(-45deg,var(--mute) 0 3px,transparent 3px 7px);background-blend-mode:difference}
+.seq{display:flex;align-items:center;justify-content:center;gap:clamp(6px,2vw,16px);min-height:clamp(84px,20vw,136px)}
+.box{width:clamp(84px,21vw,128px);height:clamp(84px,21vw,128px);display:flex;align-items:center;justify-content:center;background:var(--panel);border-radius:6px}
+.fig{width:80%;height:80%;overflow:visible}
+.arrow{color:var(--mute);font-size:20px}
+.q{font-size:44px;color:var(--mute)}
+.fix{font-size:40px;color:var(--mute);line-height:1}
+.opts{display:flex;justify-content:center;gap:clamp(8px,3vw,24px);min-height:clamp(112px,26vw,168px)}
+.opt{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation;color:var(--mute)}
+.opt .box{border:2px solid var(--line)}
+.opt:hover .box{border-color:var(--accent)}
+.opt.sel .box{border-color:var(--ink)}
+.opt kbd{font-family:var(--mono);font-size:14px}
+.fb{min-height:36px;font-size:22px;font-weight:700}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}.fb.ne{color:var(--mute);font-weight:400;font-size:16px}
+.conf{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:0}
+.scale{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.corsi{position:relative;width:min(100%,420px);aspect-ratio:1;background:var(--panel);border-radius:6px}
+.csq{position:absolute;width:15%;height:15%;background:var(--panel2);border:1px solid var(--line);border-radius:4px;cursor:pointer;padding:0;touch-action:manipulation}
+.csq.on{background:var(--accent)}
+.keypad{display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+.big{font-size:64px;font-family:var(--mono);min-height:1.3em;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:6px;font-size:14px;z-index:9}
+.ex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ex .box{width:68px;height:68px}
+.ex .box.good{outline:2px solid var(--ok)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--mute);font:12px var(--sans)}
+.tip{position:fixed;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-size:13px;pointer-events:none;z-index:9;max-width:240px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.legend i{display:inline-block;width:14px;height:10px;margin-right:5px;vertical-align:baseline;border-radius:2px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px}
+.kv div{display:flex;flex-direction:column;min-width:0}
+.kv span{font-size:13px;color:var(--mute)}.kv strong{font-size:20px;font-variant-numeric:tabular-nums}
+section.rep{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:18px}
+textarea{width:100%;height:120px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:12px var(--mono)}
+</style>
+<div id="app"></div>
+<script>window.REMOTE={"api":"api.php","jwk":{"kty":"RSA","alg":"RSA-OAEP-256","ext":true,"key_ops":["encrypt"],"n":"rSbunbMu6G1KRzFas_begh2g-7KUF_6YX69hZgsVQ_7FBbXDGFFgqEEJP44DDT2B76jbNrUwW63bkXaoURkUrSsexwM2SolMBuxzkd8vXa3NuDwlAgEj7BAQRZQdFlVXH6zuGi5F5sPJcin8XlTj3qFqf8D-MochFkDJRpZFGbvu3jGXRwiHPjWIl_cx7cZMxrErFvNcKPuB20tiB5uzE842iaIXkE8R-KVb8kHpc8jtESMGcQASJrrW6NYzwO4rtpYbNZ7pWR4tiG97Sg1asLLi0DCFL1aLWRdfBtrc9X_HCgDFXNnWgcGdyWDeINabomcyqeFRfA2X8ch-H8La-MUdGcOhzhasufb9GY7nidouSK5_MV2XbncEpBR5HYIVS6q9lnNmKpsML_PXm74QnmaXQG5jRxIOqlcZ2SEtNZzbjAu0n1OYeoJjoWQwd0FH6hqen2klWILZZqV0EqMzv2KDQa-vK-qAxckuymfVGpOOmTjVlr12KS9RODTE1XFR","e":"AQAB"}};</script>
+<script>
+'use strict';
+/* ---------- utilidades ---------- */
+const VERSION='1.0', KEY='projeto-atencao-v1';
+const POLAR=window.POLAR||null; /* presente só quando a tarefa é aberta pelo Polar Lab */
+/* REMOTE: tarefa feita em casa, pelo site do consultório. Cada envio sai criptografado
+   com a chave pública do Polar Lab; o site só guarda o envelope fechado. */
+const REMOTE=!POLAR&&window.REMOTE?window.REMOTE:null;
+const LINKED=POLAR||REMOTE;
+const CTXF=['idade','escolaridade','sono','subst','med','dx'];
+const fromB64u=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
+const INVITE=(()=>{if(!REMOTE)return null;try{const t=new URLSearchParams(location.hash.slice(1)).get('c')||'';const p=JSON.parse(new TextDecoder().decode(fromB64u(t.split('.')[0])));if(!/^[a-f0-9]{16}$/.test(p.i)||t.split('.').length!==2)return null;return Object.assign(p,{token:t})}catch(e){return null}})();
+const toB64=buf=>{let s='';const b=new Uint8Array(buf);for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)};
+let PUBKEY=null;
+async function seal(obj){if(!PUBKEY)PUBKEY=await crypto.subtle.importKey('jwk',REMOTE.jwk,{name:'RSA-OAEP',hash:'SHA-256'},false,['encrypt']);
+ const k=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt']);const iv=crypto.getRandomValues(new Uint8Array(12));
+ const data=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify(obj)));
+ const wrapped=await crypto.subtle.encrypt({name:'RSA-OAEP'},PUBKEY,await crypto.subtle.exportKey('raw',k));
+ return{v:1,key:toB64(wrapped),iv:toB64(iv),data:toB64(data)}}
+async function send(kind,obj,keepalive){if(POLAR)return fetch(kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj),keepalive:!!keepalive});
+ const env=await seal(obj);return fetch(REMOTE.api+'?action=upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign(env,{invite:INVITE.token,kind,submission:obj.submission,n:(obj.rows||[]).length})),keepalive:!!keepalive})}
+let SP=1, AUTO=null, AUTO_MS=1;
+const $=s=>document.querySelector(s), app=$('#app');
+const wait=ms=>new Promise(r=>setTimeout(r,ms/SP));
+const frame=()=>new Promise(r=>{let d=0;const f=()=>{if(!d){d=1;r(performance.now())}};requestAnimationFrame(f);setTimeout(f,60)});
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function RNG(seed){let a=seed>>>0;const f=()=>{a=a+0x6D2B79F5>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
+ f.int=n=>Math.floor(f()*n);f.shuffle=x=>{x=x.slice();for(let i=x.length-1;i>0;i--){const j=f.int(i+1);[x[i],x[j]]=[x[j],x[i]]}return x};f.pick=x=>x[f.int(x.length)];return f}
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
+const median=a=>{if(!a.length)return NaN;const b=a.slice().sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2};
+const pct=(x,d=0)=>isNaN(x)?'–':(100*x).toFixed(d).replace('.',',')+'%';
+const ms=x=>isNaN(x)?'–':Math.round(x)+' ms';
+const num=(x,d=2)=>isNaN(x)?'–':x.toFixed(d).replace('.',',');
+
+/* ---------- formas ---------- */
+const pt=(r,a)=>[r*Math.cos(a),r*Math.sin(a)];
+const pd=p=>'M'+p.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join('L')+'Z';
+const polar=(f,n=180)=>pd([...Array(n)].map((_,i)=>{const a=i/n*2*Math.PI-Math.PI/2;return pt(f(a),a)}));
+const reg=(n,r=42)=>pd([...Array(n)].map((_,i)=>pt(r,-Math.PI/2+i/n*2*Math.PI)));
+const star=(n,ri,r=45)=>pd([...Array(2*n)].map((_,i)=>pt(i%2?ri:r,-Math.PI/2+i/n*Math.PI)));
+const flower=n=>polar(a=>32+11*Math.cos(n*(a+Math.PI/2)));
+const gear=n=>polar(a=>Math.cos(n*(a+Math.PI/2))>0?44:31,n*30);
+const pl=(...c)=>{const p=[];for(let i=0;i<c.length;i+=2)p.push([c[i],c[i+1]]);return pd(p)};
+const FORM={
+ circulo:'M-38 0a38 38 0 1 0 76 0a38 38 0 1 0-76 0Z',quadrado:'M-34-34H34V34H-34Z',triangulo:reg(3,46),cruz:pl(-13,-40,13,-40,13,-13,40,-13,40,13,13,13,13,40,-13,40,-13,13,-40,13,-40,-13,-13,-13),hexagono:reg(6),semicirculo:'M-42 16a42 42 0 0 1 84 0Z',
+ pentagono:reg(5),letraT:pl(-40,-36,40,-36,40,-12,12,-12,12,40,-12,40,-12,-12,-40,-12),letraL:pl(-30,-40,-6,-40,-6,16,34,16,34,40,-30,40),elipse:'M-44 0a44 24 0 1 0 88 0a44 24 0 1 0-88 0Z',trapezio:pl(-24,-30,24,-30,44,30,-44,30),seta:pl(-42,-14,4,-14,4,-36,42,0,4,36,4,14,-42,14),
+ coracao:'M0 38C-50 6-40-34-16-34C-6-34 0-26 0-20C0-26 6-34 16-34C40-34 50 6 0 38Z',gota2:'M0-44C20-16 32-2 32 14A32 32 0 0 1-32 14C-32-2-20-16 0-44Z',anel:'M-40 0a40 40 0 1 0 80 0a40 40 0 1 0-80 0ZM-20 0a20 20 0 1 0 40 0a20 20 0 1 0-40 0Z',letraH:pl(-38,-38,-14,-38,-14,-12,14,-12,14,-38,38,-38,38,38,14,38,14,12,-14,12,-14,38,-38,38),divisa:pl(-40,-6,0,-40,40,-6,40,22,0,-12,-40,22),ampulheta:pl(-32,-40,32,-40,8,0,32,40,-32,40,-8,0),
+ flor3:flower(3),flor4:flower(4),flor5:flower(5),eng6:gear(6),letraU:pl(-36,-38,-12,-38,-12,14,12,14,12,-38,36,-38,36,38,-36,38),letraZ:pl(-38,-38,38,-38,38,-16,-6,16,38,16,38,38,-38,38,-38,16,6,-16,-38,-16),
+ lente:'M-44 0A52 52 0 0 1 44 0A52 52 0 0 1-44 0Z',paralelo:pl(-20,-30,44,-30,20,30,-44,30),pipa:pl(0,-44,28,-14,0,44,-28,-14),letraE:pl(-34,-40,34,-40,34,-20,-12,-20,-12,-10,22,-10,22,10,-12,10,-12,20,34,20,34,40,-34,40),escada:pl(-40,40,-40,14,-14,14,-14,-12,12,-12,12,-38,40,-38,40,40),setor:'M-36 36V-36A72 72 0 0 1 36 36Z',
+ est4:star(4,14),est6:star(6,24),eng10:gear(10),flor6:flower(6),bolha1:polar(a=>32+9*Math.sin(2*a+.6)+7*Math.sin(3*a+2)),bolha2:polar(a=>32+11*Math.sin(3*a+1)+5*Math.sin(5*a)),
+ arco:'M-42 34A42 42 0 0 1 42 34H20A20 20 0 0 0-20 34Z',letraY:pl(-40,-40,-14,-40,0,-14,14,-40,40,-40,12,8,12,40,-12,40,-12,8),gravata:pl(-40,-30,0,-8,40,-30,40,30,0,8,-40,30),pacman:'M0 0L30-30A42 42 0 1 0 30 30Z',oito:'M-21-21a21 21 0 1 0 42 0a21 21 0 1 0-42 0ZM-21 21a21 21 0 1 0 42 0a21 21 0 1 0-42 0Z',fechadura:'M0-42a24 24 0 0 1 14 43.5L26 40H-26L-14 1.5A24 24 0 0 1 0-42Z',
+ barra:pl(-44,-11,44,-11,44,11,-44,11),halter:pl(-44,-22,-22,-22,-22,-7,22,-7,22,-22,44,-22,44,22,22,22,22,7,-22,7,-22,22,-44,22),gancho:pl(8,-40,30,-40,30,40,-30,40,-30,8,-8,8,-8,18,8,18)};
+const SET={O:['circulo','quadrado','triangulo','cruz','hexagono','semicirculo'],T:['pentagono','letraT','letraL','elipse','trapezio','seta'],B1:['coracao','gota2','anel','letraH','divisa','ampulheta'],B2:['flor3','flor4','flor5','eng6','letraU','letraZ'],C:['lente','paralelo','pipa','letraE','escada','setor'],D:['est4','est6','eng10','flor6','bolha1','bolha2'],P:['arco','letraY','gravata','pacman','oito','fechadura']};
+const COL=['#eaa3a3','#e6b873','#bccf7b','#82d1b9','#8bc0e8','#c1a8ea'], SCL=[.78,.9,1,1.1];
+const fig=(n,c='#d7dbe1',s=1)=>`<svg class="fig" viewBox="-50 -50 100 100" aria-hidden="true"><path d="${FORM[n]}" fill="${c}" fill-rule="evenodd" transform="scale(${s})"/></svg>`;
+
+/* ---------- símbolos (pistas) ---------- */
+const rays=[...Array(8)].map((_,i)=>{const a=i*Math.PI/4,c=Math.cos(a),s=Math.sin(a);return`M${(12+6.5*c).toFixed(1)} ${(12+6.5*s).toFixed(1)}L${(12+9.5*c).toFixed(1)} ${(12+9.5*s).toFixed(1)}`}).join('');
+const IC={lua:'M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z',sol:'M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0z'+rays,losango:'M12 3l9 9-9 9-9-9z',estrela:'M12 3l2.8 5.9 6.4.9-4.6 4.5 1.1 6.4L12 17.8l-5.7 2.9 1.1-6.4L2.8 9.8l6.4-.9z',
+ nuvem:'M7 18a4 4 0 0 1-.6-8a6 6 0 0 1 11.5 1.5A3.3 3.3 0 0 1 17.5 18z',raio:'M13 2L5 14h6l-1 8 8-12h-6z',gota:'M12 3c4 5 6.5 8 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 11 8 8 12 3z',folha:'M5 19C5 10 11 4 20 4c0 9-6 15-15 15zM5 19l8-8',
+ chave:'M4 15a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM11 12l9-9M16 7l3 3',sino:'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',peixe:'M3 12c4-6 10-6 14 0-4 6-10 6-14 0zM17 12l4-4v8z',ancora:'M10 5a2 2 0 1 0 4 0a2 2 0 1 0-4 0zM12 7v14M5 13a7 8 0 0 0 14 0M8 11h8',
+ casa:'M4 11l8-7 8 7v9H4z',bandeira:'M6 21V4h12l-3 4 3 4H6',taca:'M7 3h10v5a5 5 0 0 1-10 0zM12 13v6M8 21h8',guarda:'M3 12a9 9 0 0 1 18 0zM12 12v7a2 2 0 0 0 4 0',barco:'M3 15h18l-3 5H6zM12 3v12M12 3l6 9h-6',arvore:'M12 3l6 8h-3l4 6H5l4-6H6zM12 17v4',olho:'M2 12c4-6 14-6 20 0-6 6-16 6-20 0zM9.5 12a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0z',cogumelo:'M4 12a8 8 0 0 1 16 0zM10 12v7a2 2 0 0 0 4 0v-7',
+ cadeado:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',lampada:'M9 17a6.5 6.5 0 1 1 6 0v2H9zM10 22h4',relogio:'M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0zM12 7v5l3 2',chapeu:'M3 18h18M7 18V8a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10M7 14h10'};
+const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[n]}"/></svg>`;
+const NOME={lua:'Lua',sol:'Sol',losango:'Losango',estrela:'Estrela'};
+const WORD={A:'REPETIÇÃO',B:'EXCLUSÃO'}, RN={A:'Repetição',B:'Exclusão'};
+const CUES={A:['lua','nuvem','raio'],B:['sol','gota','folha']}, IRR=['chave','sino','peixe','ancora'], P_SYM=['casa','bandeira','taca','guarda','barco','arvore','olho','cogumelo','cadeado','lampada','relogio','chapeu'];
+const MAP={lua:'A',sol:'B',nuvem:'A',raio:'A',gota:'B',folha:'B',losango:'A',estrela:'B'};
+
+/* ---------- estado ---------- */
+const fresh=()=>({v:VERSION,code:'',form:'A',created:new Date().toISOString(),ctx:{},rows:[],done:{},res:{},ooo:{}});
+let S=fresh();
+function load(){if(POLAR){S=Object.assign(fresh(),POLAR.state);return}if(REMOTE){if(!INVITE)return;try{const x=JSON.parse(localStorage.getItem(KEY+':'+INVITE.i));if(x&&x.v===VERSION){S=x;return}}catch(e){}S=fresh();S.code=INVITE.i;S.form=INVITE.f==='B'?'B':'A';return}try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.v===VERSION)S=x}catch(e){}}
+function save(){if(POLAR||(REMOTE&&!INVITE))return;try{localStorage.setItem(REMOTE?KEY+':'+INVITE.i:KEY,JSON.stringify(S))}catch(e){}}
+let CUR=null, RUNNING=false, ABORT=false, escT=0, P=null, BLOCK=0, SUB='', CK=0;
+class Abort extends Error{}
+const chk=()=>{if(ABORT)throw new Abort()};
+const rngFor=k=>RNG(hash('PA|'+S.form+'|'+k));
+function log(o){S.rows.push(Object.assign({pid:S.code,forma:S.form,stage:CUR,fora_de_ordem:S.ooo[CUR]?1:0,bloco:BLOCK,t_ms:Math.round(performance.now()),t_wall:Math.round(performance.timeOrigin+performance.now())},o));if(LINKED&&CUR&&++CK>=10){CK=0;polarPartial('em_andamento')}}
+const rowsOf=s=>S.rows.filter(r=>r.stage===s);
+
+/* ---------- entrada ---------- */
+function ask(o){return new Promise(res=>{const p={o,res,t:null};P=p;
+ if(o.timeout)p.t=setTimeout(()=>fin(p,{v:null,ts:performance.now(),timeout:true}),o.timeout/SP);
+ if(AUTO&&o.auto!==undefined)setTimeout(()=>{if(P===p)fin(p,{v:typeof o.auto==='function'?o.auto():o.auto,ts:performance.now()})},AUTO_MS);})}
+function fin(p,r){clearTimeout(p.t);if(P===p)P=null;p.res(r)}
+function toast(t){let e=$('.toast');if(!e){e=document.createElement('div');e.className='toast';document.body.append(e)}e.textContent=t;clearTimeout(e._t);e._t=setTimeout(()=>e.remove(),2200)}
+function tryExit(){const n=Date.now();if(n-escT<2200){ABORT=true;if(P)fin(P,{v:null,ts:performance.now(),abort:true})}else{escT=n;toast('Repita para sair. Os dados desta fase serão descartados.')}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RUNNING){tryExit();return}
+ if(P&&!e.repeat&&P.o.keys&&e.key in P.o.keys){e.preventDefault();fin(P,{v:P.o.keys[e.key],ts:e.timeStamp})}});
+document.addEventListener('pointerdown',e=>{const x=e.target.closest&&e.target.closest('.exit');if(x&&RUNNING){e.preventDefault();tryExit();return}
+ const b=e.target.closest&&e.target.closest('[data-v]');if(b&&P){e.preventDefault();fin(P,{v:b.dataset.v,ts:e.timeStamp})}});
+
+/* ---------- telas ---------- */
+async function instr(title,html,btn='Continuar'){chk();window.scrollTo(0,0);
+ app.innerHTML=`<div class="wrap"><div class="hud"><span>${esc(STAGE[CUR].t)}</span><button class="exit">Sair da fase</button></div><h2>${title}</h2><div class="stack">${html}</div><div class="row"><button class="btn pri" data-v="go">${btn}</button><span class="mute small">ou tecla Enter</span></div></div>`;
+ const r=await ask({keys:{Enter:'go',' ':'go'},auto:'go'});if(r.abort)chk();chk()}
+function shell(){window.scrollTo(0,0);app.innerHTML=`<div class="task"><div class="hud"><span id="hud"></span><button class="exit">Sair da fase</button></div><div class="cue" id="cue"></div><div class="seq" id="seq"></div><div class="opts" id="opts"></div><div class="fb" id="fb"></div><div class="conf" id="conf"></div></div>`}
+const hud=t=>{const e=$('#hud');if(e)e.textContent=t};
+function exRow(a,b,c,good){const f=[a,b];return`<div class="ex"><div class="box">${fig(f[0],COL[4])}</div><span class="arrow">→</span><div class="box">${fig(f[1],COL[1])}</div><span class="arrow">→</span><div class="box good">${fig(good===0?a:c,COL[3],.9)}</div></div>`}
+
+/* ---------- geração de tentativas ---------- */
+function balRules(n,rng){const base=[...Array(n)].map((_,i)=>i%2?'B':'A');let best=base,bs=1e9;
+ for(let k=0;k<300;k++){const x=rng.shuffle(base);let run=1,mx=1;const tr={AA:0,AB:0,BA:0,BB:0};for(let i=1;i<n;i++){tr[x[i-1]+x[i]]++;run=x[i]===x[i-1]?run+1:1;mx=Math.max(mx,run)}if(mx>4)continue;const v=Object.values(tr),s=Math.max(...v)-Math.min(...v);if(s<bs){bs=s;best=x}}return best}
+function trial(setN,rng,rule,prev,extra){const st=SET[setN];let f;let g=0;do{f=rng.shuffle(st).slice(0,3)}while(prev&&(f[0]===prev.f[0]||f[2]===prev.f[2])&&++g<40);
+ const c0=rng.int(6);let c1=rng.int(5);if(c1>=c0)c1++;
+ return Object.assign({setN,rule,f,col:[COL[c0],COL[c1],rng.pick(COL),rng.pick(COL),rng.pick(COL)],sc:[0,0,0,0,0].map(()=>rng.pick(SCL)),order:rng.shuffle([0,1,2]),fb:true,cue:null},extra||{})}
+function series(setN,rng,rules,mk){let p=null;return rules.map((r,i)=>{const e=mk?mk(r,i):{};p=trial(setN,rng,r,p,e);return p})}
+
+/* ---------- uma tentativa ---------- */
+function paintCue(c){const e=$('#cue');if(!c){e.innerHTML='';return}
+ if(c.kind==='word')e.innerHTML=`<div class="word">${WORD[c.rule]}</div>`;
+ else if(c.kind==='sym')e.innerHTML=`<div class="syms">${c.syms.map(ic).join('')}</div>`;
+ else if(c.kind==='arr')e.innerHTML=`<div class="arr">${c.slots.map(s=>`<div class="slot">${s?ic(s):'<div class="neu"></div>'}</div>`).join('')}</div><div class="word">${c.word?WORD[c.word]:''}</div>`;
+ else if(c.kind==='mask')e.innerHTML=`<div class="arr">${[...Array(7)].map(()=>'<div class="slot mask"></div>').join('')}</div><div class="word"></div>`}
+function paintSeq(t){$('#seq').innerHTML=`<div class="box">${fig(t.f[0],t.col[0],t.sc[0])}</div><span class="arrow">→</span><div class="box">${fig(t.f[1],t.col[1],t.sc[1])}</div><span class="arrow">→</span><div class="box"><span class="q">?</span></div>`;
+ $('#opts').innerHTML=t.order.map((role,p)=>`<button class="opt" data-v="${p}" aria-label="Opção ${p+1}"><div class="box">${fig(t.f[role],t.col[2+p],t.sc[2+p])}</div><kbd>${p+1}</kbd></button>`).join('')}
+async function runTrial(t){chk();$('#cue').innerHTML='';$('#opts').innerHTML='';$('#fb').textContent='';$('#fb').className='fb';$('#conf').innerHTML='';
+ $('#seq').innerHTML='<div class="fix">+</div>';await wait(400);chk();$('#seq').innerHTML='';
+ if(t.cue&&t.cue.kind==='arr'&&t.cueMs){paintCue(t.cue);await wait(t.cueMs);chk();paintCue({kind:'mask'});await wait(100);$('#cue').innerHTML='';await wait(150);chk()}else paintCue(t.cue);
+ paintSeq(t);const t0=await frame();
+ const r=await ask({keys:{1:'0',2:'1',3:'2'},timeout:6000,auto:()=>AUTO(t)});if(r.abort)chk();
+ const pos=r.timeout?null:+r.v;let rt=r.timeout?null:Math.round(Math.max(r.ts,t0)-t0);if(rt!==null&&rt<=0)rt=Math.round(performance.now()-t0);
+ const role=pos===null?null:t.order[pos],corr=role===(t.rule==='A'?0:2);
+ if(pos!==null){const el=document.querySelectorAll('.opt')[pos];if(el)el.classList.add('sel')}
+ let conf=null;
+ if(t.conf&&pos!==null){$('#conf').innerHTML=`<span class="mute small">Confiança nesta resposta</span><div class="scale">${[1,2,3,4].map(v=>`<button class="btn" data-v="${v}">${v}</button>`).join('')}</div><span class="mute small">1 = chute, 4 = certeza</span>`;
+  const c=await ask({keys:{1:'1',2:'2',3:'3',4:'4'},auto:'3'});if(c.abort)chk();conf=+c.v;$('#conf').innerHTML=''}
+ let shown='none';const fb=$('#fb');
+ if(pos===null){fb.textContent='Muito lento';fb.className='fb ne';await wait(900)}
+ else if(t.fb){const val=t.fb==='q'&&t.flip?!corr:corr;shown=val?'+':'-';fb.textContent=val?'Correto':'Incorreto';fb.className='fb '+(val?'ok':'no');await wait(750)}
+ else{fb.textContent='';await wait(350)}
+ log({n:t.n,regra:t.rule,cond:t.cond||'',instr:t.instr||'',pista:t.cueName||'',validade_q:t.fb==='q'?(t.flip?0:1):'',f1:t.f[0],f2:t.f[1],nova:t.f[2],pos,papel:role===null?'':['F1','F2','nova'][role],tr:rt,omissao:pos===null?1:0,acerto:corr?1:0,fb:shown,conf:conf===null?'':conf,cue_ms:t.cueMs||'',segmento:t.seg||'',sonda:t.probe?1:0,excecao:t.exc===undefined?'':(t.exc?1:0),lag:t.lag===undefined?'':t.lag,tipo:t.tipo||'',reversao:t.rev||''});
+ $('#seq').innerHTML='';$('#opts').innerHTML='';$('#cue').innerHTML='';fb.textContent='';await wait(250);chk();
+ return{corr,rule:t.rule,role,rt,shown}}
+async function runList(list,label){let c=0;const by={A:[0,0],B:[0,0]};shell();
+ for(let i=0;i<list.length;i++){list[i].n=list[i].n||i+1;hud(`${label} · ${i+1}/${list.length}`);const r=await runTrial(list[i]);if(r.corr)c++;by[r.rule][0]+=r.corr?1:0;by[r.rule][1]++}return{c,n:list.length,by}}
+
+/* ---------- fases ---------- */
+async function st1A(){await instr('Fase 1A: as duas regras',`<p>Você verá duas figuras em sequência e escolherá a terceira entre três opções: a primeira figura, a segunda figura e uma figura nova.</p>
+ <h3>Repetição</h3><p>A terceira figura é igual à primeira.</p>${exRow('barra','halter','gancho',0)}
+ <h3>Exclusão</h3><p>A terceira figura é diferente das duas primeiras.</p>${exRow('barra','halter','gancho',2)}
+ <p>Igual significa ter a mesma forma. Cor e tamanho variam e não contam.</p><p>Nesta fase o nome da regra aparece na tela. Responda com as teclas <b>1, 2, 3</b> ou tocando na opção. Você tem até 6 segundos e recebe feedback a cada resposta.</p>`,'Começar');
+ let b=0,ok=false;while(b<6&&!ok){b++;BLOCK=b;const rng=rngFor('1A-'+b);const list=series('O',rng,balRules(20,rng),r=>({cue:{kind:'word',rule:r}}));
+  const s=await runList(list,`Fase 1A · bloco ${b}`);ok=s.c>=18&&s.by.A[0]>=9&&s.by.B[0]>=9;
+  await instr(`Bloco ${b}: ${s.c} de 20`,`<p class="mute">Repetição ${s.by.A[0]}/10 · Exclusão ${s.by.B[0]}/10. Critério: 18 de 20, com pelo menos 9 em cada regra.</p>`,ok||b>=6?'Concluir':'Próximo bloco')}
+ S.res['1A']={blocks:b,passed:ok}}
+const symLeg=(a,b)=>`<div class="row" style="gap:28px">${[a,b].map(s=>`<div class="stack" style="align-items:center;gap:2px">${ic(s)}<span class="mute small">${NOME[s]}</span></div>`).join('')}</div>`;
+async function st1B(){await instr('Fase 1B: símbolos no lugar das palavras',`${symLeg('lua','sol')}<p>Agora o nome da regra sai. Cada símbolo indica uma das duas regras, sempre a mesma. Descubra qual pelo feedback.</p>`,'Começar');
+ let b=0,streak=0;while(b<6&&streak<2){b++;BLOCK=b;const rng=rngFor('1B-'+b);const rules=balRules(20,rng);const list=series('O',rng,rules,r=>{const cueName=r==='A'?'lua':'sol';return{cue:{kind:'sym',syms:[cueName]},cueName}});
+  const s=await runList(list,`Fase 1B · bloco ${b}`);const good=s.c>=18&&s.by.A[0]>=8&&s.by.B[0]>=8;streak=good?streak+1:0;
+  await instr(`Bloco ${b}: ${s.c} de 20`,`<p class="mute">Critério: pelo menos 18 de 20, com ao menos 8 em cada regra, em dois blocos seguidos.</p>`,streak>=2||b>=6?'Concluir':'Próximo bloco')}
+ await symbolCheck();S.res['1B']={blocks:b,passed:streak>=2}}
+async function symbolCheck(){for(const s of['lua','sol']){BLOCK=0;chk();app.innerHTML=`<div class="wrap"><h2>Qual regra este símbolo indica?</h2><div>${ic(s)}</div><div class="row"><button class="btn" data-v="A">1 · Repetição</button><button class="btn" data-v="B">2 · Exclusão</button></div></div>`;
+  const r=await ask({keys:{1:'A',2:'B'},auto:MAP[s]});if(r.abort)chk();log({n:0,tipo:'checagem',pista:s,regra:MAP[s],resposta:r.v,acerto:r.v===MAP[s]?1:0})}}
+function slots7(rng,arr){const pos=rng.shuffle([0,1,2,3,4,5,6]),s=Array(7).fill(null);arr.forEach((a,i)=>s[pos[i]]=a);return s}
+async function st2T(){await instr('Fase 2A, treino: novos símbolos',`<p>Vários símbolos aparecem agora em uma fileira de sete lugares. Alguns indicam a regra e outros não indicam nada. Descubra quais pelo feedback.</p><p>Lua e Sol continuam indicando o mesmo de antes.</p>`,'Começar');
+ let b=0,ok=false;while(b<4&&!ok){b++;BLOCK=b;const rng=rngFor('2T-'+b);const inf=[...CUES.A,...CUES.B].flatMap(x=>[x,x,x,x]);const irrA=rng.shuffle(IRR.flatMap(x=>[x,x])),irrB=rng.shuffle(IRR.flatMap(x=>[x,x]));
+  let tr=rng.shuffle(inf).map(c=>({c,r:MAP[c]}));let ia=0,ib=0;const noIrr=new Set(rng.shuffle([...Array(24).keys()]).slice(0,8));
+  let p=null;const list=tr.map((x,i)=>{let ir=null;if(!noIrr.has(i)){if(x.r==='A'&&ia<irrA.length)ir=irrA[ia++];else if(x.r==='B'&&ib<irrB.length)ir=irrB[ib++]}
+   const sl=slots7(rng,ir?[x.c,ir]:[x.c]);p=trial('O',rng,x.r,p,{cue:{kind:'arr',slots:sl},cueName:x.c+(ir?'+'+ir:'')});return p});
+  const s=await runList(list,`Treino de símbolos · bloco ${b}`);ok=s.c>=21;
+  await instr(`Bloco ${b}: ${s.c} de 24`,`<p class="mute">Critério: pelo menos 21 de 24.</p>`,ok||b>=4?'Concluir':'Próximo bloco')}
+ S.res['2T']={blocks:b,passed:ok}}
+function arrCue(rng,rule,nInf,nIrr,explicit){const inf=nInf===1?[rng.pick(CUES[rule])]:CUES[rule].slice(),irr=rng.shuffle(IRR).slice(0,nIrr);
+ return{slots:slots7(rng,explicit?irr:[...inf,...irr]),inf}}
+async function st2C(){await instr('Fase 2A, ajuste de velocidade',`<p>Agora os símbolos aparecem por um instante e somem antes das figuras. O tempo de exibição se ajusta ao seu desempenho, então a tarefa fica difícil de propósito.</p><p>Não há feedback nesta parte. Responda como conseguir.</p>`,'Começar');
+ BLOCK=1;const rng=rngFor('2CAL');const rules=balRules(40,rng);let D=800,st=0,dir=0;const rev=[];shell();let prev=null;
+ for(let i=0;i<40;i++){hud(`Ajuste · ${i+1}/40`);const a=arrCue(rng,rules[i],1,4,false);prev=trial('T',rng,rules[i],prev,{n:i+1,cue:{kind:'arr',slots:a.slots},cueMs:Math.round(D),fb:false,cueName:a.inf.join('+'),cond:'C3',instr:'inferida'});
+  const r=await runTrial(prev);if(r.corr){st++;if(st===2){st=0;if(dir===1)rev.push(D);dir=-1;D=Math.max(50,D/1.22)}}else{st=0;if(dir===-1)rev.push(D);dir=1;D=Math.min(2000,D*1.22)}}
+ const last=rev.slice(-6),thr=last.length>=2?Math.exp(mean(last.map(Math.log))):D;S.res['2CAL']={thr:Math.round(thr),cueMs:Math.round(Math.min(1500,Math.max(100,thr))),reversoes:rev.length}}
+async function st2A(){const cueMs=(S.res['2CAL']||{}).cueMs||500;await instr('Fase 2A: teste com figuras inéditas',`<p>As figuras agora são novas. As regras e os símbolos são os mesmos, e não há feedback.</p><p>Em metade das tentativas a palavra da regra aparece no lugar dos símbolos que a indicam. Na outra metade, use os símbolos.</p><p class="mute small">Tempo de exibição calibrado: ${cueMs} ms.</p>`,'Começar');
+ const rng=rngFor('2A');const C={C1:[1,0],C2:[3,0],C3:[1,4],C4:[3,4]};let cells=[];for(const c in C)for(const ins of['explicita','inferida'])for(const r of['A','B'])for(let k=0;k<5;k++)cells.push({c,ins,r});
+ cells=rng.shuffle(cells);let prev=null;const list=cells.map(x=>{const[nI,nR]=C[x.c];const exp=x.ins==='explicita';const a=arrCue(rng,x.r,nI,nR,exp);prev=trial('T',rng,x.r,prev,{cue:{kind:'arr',slots:a.slots,word:exp?x.r:null},cueMs,fb:false,cond:x.c,instr:x.ins,cueName:exp?'':a.inf.join('+')});return prev});
+ BLOCK=1;await runList(list.slice(0,40),'Fase 2A · bloco 1');await instr('Pausa','<p class="mute">Descanse o quanto quiser.</p>','Continuar');BLOCK=2;const l2=list.slice(40);l2.forEach((t,i)=>t.n=41+i);await runList(l2,'Fase 2A · bloco 2');S.res['2A']={cueMs}}
+async function st2B(){await instr('Fase 2B: dois símbolos novos',`${symLeg('losango','estrela')}<p>Cada um destes símbolos indica uma das duas regras. Descubra qual pelo feedback.</p>`,'Começar');
+ const cueT=(c)=>({cue:{kind:'sym',syms:[c]},cueName:c});const pick=r=>r==='A'?'losango':'estrela';
+ BLOCK=1;let rng=rngFor('2B-L');let list=series('B1',rng,balRules(40,rng),r=>cueT(pick(r)));let s=await runList(list,'Fase 2B · aprendizagem');
+ let ext=0,lastOk=rowsOf('2B').slice(-20).reduce((a,r)=>a+r.acerto,0)>=18;
+ while(!lastOk&&ext<3){ext++;BLOCK=1+ext;rng=rngFor('2B-X'+ext);list=series('B1',rng,balRules(20,rng),r=>cueT(pick(r)));s=await runList(list,`Fase 2B · extensão ${ext}`);lastOk=s.c>=18}
+ await instr('Agora sem feedback','<p>Mesmos símbolos, figuras novas. Você não saberá se acertou.</p>','Continuar');
+ BLOCK=10;rng=rngFor('2B-T');list=series('B2',rng,balRules(20,rng),r=>Object.assign(cueT(pick(r)),{fb:false,tipo:'teste_novas'}));await runList(list,'Fase 2B · teste');
+ await instr('Símbolos anteriores','<p>Lua e Sol voltam, também sem feedback.</p>','Continuar');
+ BLOCK=11;rng=rngFor('2B-O');list=series('B2',rng,balRules(20,rng),r=>Object.assign(cueT(r==='A'?'lua':'sol'),{fb:false,tipo:'teste_antigas'}));await runList(list,'Fase 2B · teste');S.res['2B']={ext,passed:lastOk}}
+async function st2R(){await instr('Fase 2C: Lua e Sol com feedback',`${symLeg('lua','sol')}<p>Você volta a receber feedback nas tentativas com Lua e Sol. Em algumas tentativas aparece outro símbolo já visto, e nelas não há feedback.</p>`,'Começar');
+ BLOCK=1;const rng=rngFor('2R');const r1=17+rng.int(9),r2=39+rng.int(9);
+ const cues=(()=>{for(;;){const x=rng.shuffle([...Array(60)].map((_,i)=>i%2?'sol':'lua'));let ok=true;for(let i=3;i<60;i++)if(x[i]===x[i-1]&&x[i]===x[i-2]&&x[i]===x[i-3]){ok=false;break}if(ok)return x}})();
+ const slotsP=rng.shuffle([...Array(r2-1-(r1+8)+1)].map((_,i)=>r1+8+i)).slice(0,6);const probes=rng.shuffle(['losango','losango','losango','estrela','estrela','estrela']);
+ let prev=null;const list=[];cues.forEach((c,i)=>{const n=i+1,inv=(n>=r1&&n<r2);const rule=inv?(MAP[c]==='A'?'B':'A'):MAP[c];prev=trial('C',rng,rule,prev,{n,cue:{kind:'sym',syms:[c]},cueName:c,seg:n<r1?1:n<r2?2:3,rev:n===r1?1:n===r2?2:''});list.push(prev);
+  const k=slotsP.indexOf(n);if(k>=0){const pc=probes[k];prev=trial('C',rng,MAP[pc],prev,{n:n+.5,cue:{kind:'sym',syms:[pc]},cueName:pc,fb:false,probe:true,seg:2});list.push(prev)}});
+ await runList(list,'Fase 2C');S.res['2C']={r1,r2}}
+/* 2P: Lua e Sol valem em 80% das tentativas; o feedback é sempre verdadeiro.
+   Exceções: 20% por pista em cada segmento, nunca nas 2 primeiras do segmento,
+   nunca duas seguidas da mesma pista. Duas reversões em posições fixas por forma. */
+async function st2P(){await instr('Fase 2P: Lua e Sol menos confiáveis',`${symLeg('lua','sol')}<p>Lua e Sol continuam indicando as regras, mas agora <b>nem sempre acertam</b>: na maior parte das tentativas vale a regra do símbolo; em algumas, vale a outra.</p><p>O feedback está sempre certo. Use-o para decidir o que fazer nas próximas vezes.</p>`,'Começar');
+ BLOCK=1;const rng=rngFor('2P');const N=100,r1=34+rng.int(5),r2=67+rng.int(5);const seg=n=>n<r1?1:n<r2?2:3;const flip=r=>r==='A'?'B':'A';
+ const cues=(()=>{for(;;){const x=rng.shuffle([...Array(N)].map((_,i)=>i%2?'sol':'lua'));let ok=true;for(let i=3;i<N;i++)if(x[i]===x[i-1]&&x[i]===x[i-2]&&x[i]===x[i-3]){ok=false;break}if(ok)return x}})();
+ const exc=new Set();
+ for(const sg of [1,2,3])for(const c of ['lua','sol']){const idx=cues.map((x,i)=>i).filter(i=>cues[i]===c&&seg(i+1)===sg);const k=Math.round(idx.length*.2);
+  for(let tries=0;tries<200;tries++){const pick=new Set();for(const j of rng.shuffle(idx.slice(2).map((_,q)=>q+2))){if(pick.size>=k)break;if(pick.has(j-1)||pick.has(j+1))continue;pick.add(j)}if(pick.size===k){pick.forEach(j=>exc.add(idx[j]));break}}}
+ let prev=null;const list=cues.map((c,i)=>{const n=i+1,mapped=seg(n)===2?flip(MAP[c]):MAP[c],e=exc.has(i);prev=trial('C',rng,e?flip(mapped):mapped,prev,{n,cue:{kind:'sym',syms:[c]},cueName:c,seg:seg(n),rev:n===r1?1:n===r2?2:'',exc:e});return prev});
+ await runList(list,'Fase 2P');S.res['2P']={r1,r2}}
+function rep2P(){const R=rowsOf('2P').sort((a,b)=>a.n-b.n);if(!R.length)return'<p class="mute">Não realizada.</p>';const res=S.res['2P']||{};const flip=r=>r==='A'?'B':'A';
+ const mapped=r=>r.segmento===2?flip(MAP[r.pista]):MAP[r.pista],ch=r=>r.papel==='F1'?'A':r.papel==='nova'?'B':null;
+ const stable=R.filter(r=>![1,res.r1,res.r2].some(s=>r.n>=s&&r.n<s+10)&&ch(r));const mx=mean(stable.map(r=>ch(r)===mapped(r)?1:0));
+ let op=0,sw=0;R.forEach((r,i)=>{if(r.excecao!==1||!ch(r))return;const j=R.slice(i+1).find(x=>x.pista===r.pista);if(!j||j.segmento!==r.segmento||!ch(j))return;op++;if(ch(j)!==mapped(j))sw++});
+ const adapt=[res.r1,res.r2].map((s,k)=>{const end=k?101:res.r2;const seg=R.filter(r=>r.n>=s&&r.n<end);let run=0;for(let i=0;i<seg.length;i++){run=ch(seg[i])===mapped(seg[i])?run+1:0;if(run===4)return i+1}return`mais de ${seg.length} (censurado)`});
+ return kv([['Acerto (teto 80%)',pct(mean(R.map(r=>r.acerto)),1)],['Seguiu a regra mais provável',pct(mx)],['Trocou após exceção isolada',op?`${sw} de ${op}`:'–'],['Tentativas até seguir o novo par, 1ª reversão',adapt[0]],['Tentativas até seguir o novo par, 2ª reversão',adapt[1]]])+`<p class="mute small">Quem segue sempre a regra mais provável acerta cerca de 80%; quem alterna na proporção dos resultados, perto de 68%. Trocar após uma exceção isolada indica instabilidade diante do ruído; demorar após a reversão, rigidez.</p>`}
+function make2D(key){const rng=RNG(hash('PA|'+S.form+'|'+key));let z;for(;;){z=[rng()<.5?'A':'B'];let ch=[];for(let i=1;i<120;i++){const s=rng()<.05;z.push(s?(z[i-1]==='A'?'B':'A'):z[i-1]);if(s)ch.push(i)}if(ch.length!==6)continue;const nA=z.filter(x=>x==='A').length;if(nA<50||nA>70)continue;const c=[0,...ch,120];let ok=true;for(let i=1;i<c.length;i++)if(c[i]-c[i-1]<6)ok=false;if(ok){var chg=ch;break}}
+ const flips=[];for(let b=0;b<4;b++){flips.push(...rng.shuffle([...Array(30)].map((_,i)=>i<6)))}
+ const lag=[];let l=99;for(let i=0;i<120;i++){if(chg.includes(i))l=0;else if(l<99)l++;lag.push(l)}
+ const confSet=new Set();chg.forEach(c=>{confSet.add(c+1);confSet.add(c+3)});const stable=rng.shuffle([...Array(120).keys()].filter(i=>lag[i]>=8&&i>5)).slice(0,12);stable.forEach(i=>confSet.add(i));
+ return{z,flips,lag,confSet,chg}}
+async function st2D(key,titulo){await instr(titulo,`<p>Agora não há símbolo nenhum. Em cada tentativa vale uma das duas regras. A regra permanece por um tempo e às vezes muda, sem aviso.</p><p>O feedback está certo na maior parte das vezes, mas <b>em parte das tentativas ele engana</b>. Use o conjunto das respostas para decidir qual regra está valendo.</p><p>Em algumas tentativas, depois da resposta, você dirá sua confiança.</p>`,'Começar');
+ const q=make2D(key);const rng=RNG(hash('PA|'+S.form+'|'+key+'|fig'));let prev=null;const all=q.z.map((r,i)=>{prev=trial('D',rng,r,prev,{n:i+1,fb:'q',flip:q.flips[i],lag:q.lag[i],conf:q.confSet.has(i),seg:''});return prev});
+ for(let b=0;b<4;b++){BLOCK=b+1;await runList(all.slice(b*30,(b+1)*30),`${titulo.split(':')[0]} · bloco ${b+1}/4`);if(b<3)await instr('Pausa','<p class="mute">Descanse o quanto quiser. A regra pode ter mudado ou não durante a pausa.</p>','Continuar')}
+ S.res[key]={chg:q.chg}}
+async function st1R(){await instr('Reaquecimento',`<p>Um bloco curto com as duas regras escritas, para lembrar a tarefa.</p>`,'Começar');BLOCK=1;const rng=rngFor('1R');await runList(series('O',rng,balRules(20,rng),r=>({cue:{kind:'word',rule:r}})),'Reaquecimento');}
+async function st3(){const rng=rngFor('3-map');const sy=rng.shuffle(P_SYM);const M={X1:sy[0],X2:sy[1],Y1:sy[2],Y2:sy[3],W1:sy[4],W2:sy[5],V1:sy[6],V2:sy[7]},foils=sy.slice(8,12);const R={X1:'A',Y1:'A',W1:'A',V1:'A',X2:'B',Y2:'B',W2:'B',V2:'B'};
+ await instr('Fase 3: outros símbolos',`<p>Símbolos totalmente novos. Cada um indica, ou não, uma das regras. Descubra pelo feedback.</p>`,'Começar');
+ const sc=(names,lbl)=>({cue:{kind:'sym',syms:names},cueName:lbl});
+ let b=0,ok=false;while(b<4&&!ok){b++;BLOCK=b;const g=rngFor('3-pre-'+b);const list=series('P',g,balRules(20,g),r=>Object.assign(sc([M[r==='A'?'X1':'X2']],r==='A'?'X1':'X2'),{tipo:'pre'}));const s=await runList(list,`Fase 3 · etapa 1 · bloco ${b}`);ok=s.c>=18;await instr(`Bloco ${b}: ${s.c} de 20`,'<p class="mute">Critério: pelo menos 18 de 20.</p>',ok||b>=4?'Concluir':'Próximo bloco')}
+ await instr('Agora, pares de símbolos','<p>Os símbolos aparecem aos pares. Continue respondendo, com feedback.</p>','Continuar');
+ BLOCK=10;{const g=rngFor('3-comp');const pairs=g.shuffle([...Array(12)].flatMap(()=>[['X1','Y1'],['X2','Y2'],['W1','V1'],['W2','V2']]));let prev=null;const list=pairs.map(p=>{const order=g.shuffle(p);prev=trial('P',g,R[p[0]],prev,sc(order.map(k=>M[k]),p.join('+')));prev.tipo='composto';return prev});await runList(list,'Fase 3 · etapa 2')}
+ await instr('Cada símbolo sozinho','<p>Agora cada símbolo aparece sozinho e não há feedback. Responda o que achar mais provável.</p>','Continuar');
+ BLOCK=20;{const g=rngFor('3-test');const cs=g.shuffle(Object.keys(M).flatMap(k=>[k,k,k,k]));let prev=null;const list=cs.map(k=>{prev=trial('P',g,R[k],prev,Object.assign(sc([M[k]],k),{fb:false,tipo:'teste_'+k[0]}));return prev});await runList(list,'Fase 3 · teste')}
+ BLOCK=30;for(const k of rngFor('3-rate').shuffle(Object.keys(M))){chk();app.innerHTML=`<div class="wrap"><h2>O quanto este símbolo indica cada regra?</h2><div>${ic(M[k])}</div><div class="scale" style="justify-content:flex-start">${[1,2,3,4,5,6,7].map(v=>`<button class="btn" data-v="${v}">${v}</button>`).join('')}</div><p class="mute small">1 = certamente Repetição · 4 = não indica nada · 7 = certamente Exclusão</p></div>`;const r=await ask({keys:{1:'1',2:'2',3:'3',4:'4',5:'5',6:'6',7:'7'},auto:'4'});if(r.abort)chk();log({n:0,tipo:'nota',pista:k,regra:R[k],resposta:+r.v})}
+ BLOCK=40;for(const it of rngFor('3-rec').shuffle([...Object.keys(M).map(k=>({k,s:M[k],old:1})),...foils.map(s=>({k:'foil',s,old:0}))])){chk();app.innerHTML=`<div class="wrap"><h2>Você viu este símbolo nesta fase?</h2><div>${ic(it.s)}</div><div class="row"><button class="btn" data-v="1">1 · Sim</button><button class="btn" data-v="0">2 · Não</button></div></div>`;const r=await ask({keys:{1:'1',2:'0'},auto:'1'});if(r.abort)chk();log({n:0,tipo:'reconhecimento',pista:it.k,antigo:it.old,resposta:+r.v,acerto:(+r.v===it.old)?1:0})}
+ S.res['3']={map:M}}
+const CP=[[12,10],[45,6],[76,18],[8,42],[38,36],[70,48],[20,74],[52,70],[80,78]];
+function spanLoop(run){return async()=>{let L=3,best=0,fails=0;while(L<=9){fails=0;for(let k=0;k<2;k++){BLOCK=L;const ok=await run(L,k);if(ok)best=Math.max(best,L);else fails++}if(fails===2)break;L++}return best}}
+async function stCorsi(){await instr('Blocos: sequência espacial',`<p>Quadrados acendem em sequência. Depois, toque neles <b>na mesma ordem</b>. A sequência cresce até você errar duas vezes no mesmo tamanho.</p>`,'Começar');const rng=rngFor('corsi');
+ const best=await spanLoop(async(L,k)=>{const seq=rng.shuffle([...Array(9).keys()]).slice(0,L);app.innerHTML=`<div class="wrap"><div class="hud"><span>Sequência de ${L}</span><button class="exit">Sair da fase</button></div><div class="corsi">${CP.map((c,i)=>`<button class="csq" data-v="${i}" style="left:${c[0]}%;top:${c[1]}%"></button>`).join('')}</div><p class="mute" id="st">Observe</p></div>`;const sq=[...document.querySelectorAll('.csq')];await wait(500);for(const i of seq){chk();sq[i].classList.add('on');await wait(600);sq[i].classList.remove('on');await wait(250)}$('#st').textContent='Sua vez';const ans=[];for(let i=0;i<L;i++){const r=await ask({auto:()=>String(seq[ans.length])});if(r.abort)chk();ans.push(+r.v);sq[+r.v].classList.add('on');await wait(120);sq[+r.v].classList.remove('on')}const ok=ans.join()===seq.join();log({n:k+1,tipo:'corsi',tamanho:L,acerto:ok?1:0});await wait(400);return ok})();S.res.corsi={span:best}}
+async function stDig(){await instr('Dígitos em ordem inversa',`<p>Dígitos aparecem um a um. Depois, digite-os <b>do último para o primeiro</b>.</p>`,'Começar');const rng=rngFor('dig');
+ const best=await spanLoop(async(L,k)=>{const seq=[];while(seq.length<L){const d=rng.int(10);if(d!==seq[seq.length-1])seq.push(d)}app.innerHTML=`<div class="wrap" style="align-items:center"><div class="hud"><span>${L} dígitos</span><button class="exit">Sair da fase</button></div><div class="big" id="d"></div><div id="kp"></div></div>`;const d=$('#d');await wait(400);for(const x of seq){chk();d.textContent=x;await wait(800);d.textContent='';await wait(200)}
+  $('#kp').innerHTML=`<div class="keypad">${[1,2,3,4,5,6,7,8,9].map(v=>`<button class="btn" data-v="${v}">${v}</button>`).join('')}<button class="btn" data-v="del">⌫</button><button class="btn" data-v="0">0</button><button class="btn pri" data-v="ok">OK</button></div>`;let txt='';const keys={Enter:'ok',Backspace:'del'};for(let i=0;i<10;i++)keys[i]=String(i);const rev=seq.slice().reverse().join('');
+  for(;;){d.textContent=txt||'·';const r=await ask({keys,auto:()=>txt.length<L?rev[txt.length]:'ok'});if(r.abort)chk();if(r.v==='ok')break;if(r.v==='del')txt=txt.slice(0,-1);else if(txt.length<12)txt+=r.v}const ok=txt===rev;log({n:k+1,tipo:'digitos',tamanho:L,acerto:ok?1:0});return ok})();S.res.dig={span:best}}
+async function stSpd(){await instr('Velocidade: mesma forma?',`<p>Duas figuras aparecem. Responda se têm a mesma forma, o mais rápido que conseguir, sem errar. A cor e o tamanho não contam. A tarefa dura 60 segundos.</p><p><b>1</b> = mesma forma · <b>2</b> = formas diferentes</p>`,'Começar');const rng=rngFor('spd');const pool=[...SET.O,...SET.T];const T0=performance.now();let n=0;BLOCK=1;
+ app.innerHTML=`<div class="task"><div class="hud"><span id="hud"></span><button class="exit">Sair da fase</button></div><div class="seq" id="seq"></div><div class="row"><button class="btn" data-v="1">1 · Mesma</button><button class="btn" data-v="0">2 · Diferente</button></div></div>`;
+ while((performance.now()-T0)*SP<60000&&n<(AUTO?20:999)){chk();n++;const same=rng()<.5;const a=rng.pick(pool);let b=a;if(!same)do{b=rng.pick(pool)}while(b===a);hud(`${Math.max(0,60-Math.round((performance.now()-T0)*SP/1000))} s`);$('#seq').innerHTML=`<div class="box">${fig(a,rng.pick(COL),rng.pick(SCL))}</div><div class="box">${fig(b,rng.pick(COL),rng.pick(SCL))}</div>`;const t0=await frame();const r=await ask({keys:{1:'1',2:'0'},timeout:5000,auto:same?'1':'0'});if(r.abort)chk();const rt=r.timeout?null:Math.round(Math.max(r.ts,t0)-t0);log({n,tipo:'velocidade',tr:rt,acerto:(!r.timeout&&(+r.v===(same?1:0)))?1:0,omissao:r.timeout?1:0});$('#seq').innerHTML='';await wait(200)}}
+async function stCtx(){chk();const c=POLAR?Object.assign({},POLAR.prefill,S.ctx,{code:POLAR.patientId}):REMOTE?Object.assign({},S.ctx,{code:INVITE.i}):S.ctx;const hide=new Set(POLAR?POLAR.hide:REMOTE?CTXF.filter(k=>!(INVITE.a||[]).includes(k)):[]);const f=(id,lb,t='text',ex='')=>hide.has(id)?'':`<label for="${id}">${lb}<input id="${id}" type="${t}" value="${esc(c[id]||'')}" ${ex}></label>`;
+ app.innerHTML=`<div class="wrap"><h2>Contexto desta aplicação</h2><p class="mute">${REMOTE?'Algumas perguntas rápidas. Tudo opcional.':POLAR?'Só o que ainda não consta no Polar Lab. Tudo opcional.':'Tudo opcional, exceto o código. Fica somente neste navegador até você exportar.'}</p><form id="f" class="stack"><div class="form">${f('code','Código do participante',LINKED?'hidden':'text')}<label for="form" ${LINKED?'style="display:none"':''}>Forma da sequência<select id="form"><option value="A">A (primeira aplicação)</option><option value="B">B (reteste, outra sequência)</option></select></label>${f('idade','Idade','number','min="0"')}${f('escolaridade','Anos de estudo','number','min="0"')}${f('sono','Horas de sono na noite anterior','number','step="0.5" min="0"')}${f('subst','Cafeína, álcool ou outras substâncias hoje')}${f('med','Medicação em uso hoje')}${f('dx','Diagnósticos')}</div><div class="row"><button class="btn pri" type="submit">Salvar e voltar</button></div><p id="er" class="small" style="color:var(--bad)"></p></form></div>`;
+ $('#form').value=S.form;
+ if(LINKED){const lab=$('#code').closest('label');if(lab)lab.style.display='none'}
+ const nothingToAsk=LINKED&&['idade','escolaridade','sono','subst','med','dx'].every(k=>hide.has(k));
+ await new Promise(res=>{P={o:{},res:()=>res()};$('#f').addEventListener('submit',e=>{e.preventDefault();const code=$('#code').value.trim();if(!code){$('#er').textContent='Informe um código, por exemplo P001.';return}for(const k of['code','idade','escolaridade','sono','subst','med','dx']){const el=$('#'+k);S.ctx[k]=el?el.value:(c[k]||'')}if(LINKED){S.ctx.modo=REMOTE?'remoto':'consultorio';S.ctx.dispositivo=`${navigator.userAgent} | tela ${screen.width}x${screen.height} | toque ${navigator.maxTouchPoints>0?'sim':'não'}`;if(REMOTE)S.ctx.consentimento=S.consent||''}S.code=code;S.form=$('#form').value;P=null;res()});if(nothingToAsk)$('#f').requestSubmit();else if(AUTO){if(!LINKED)$('#code').value='AUTO';$('#f').requestSubmit()}});chk()}
+
+const STAGE={ctx:{s:1,t:'Contexto',d:'Código, sono, medicação',m:2,run:stCtx},'1A':{s:1,t:'Fase 1A',d:'Regras explícitas',m:3,run:st1A},'1B':{s:1,t:'Fase 1B',d:'Lua e Sol',m:4,run:st1B},'2T':{s:1,t:'Fase 2A, treino',d:'Símbolos extras e irrelevantes',m:4,run:st2T},'2CAL':{s:1,t:'Fase 2A, ajuste',d:'Duração da pista em escada',m:3,run:st2C},'2A':{s:1,t:'Fase 2A',d:'Generalização: carga × instrução',m:6,run:st2A},'2B':{s:1,t:'Fase 2B',d:'Reassociação com símbolos novos',m:6,run:st2B},'2C':{s:1,t:'Fase 2C',d:'Reversão de contingências',m:5,run:st2R},'2P':{s:1,t:'Fase 2P',d:'Lua e Sol menos confiáveis',m:7,run:st2P},'2D':{s:1,t:'Fase 2D',d:'Inferência sem pista, feedback ruidoso',m:9,run:()=>st2D('2D','Fase 2D: regra oculta')},
+ '1R':{s:2,t:'Reaquecimento',d:'Um bloco da Fase 1A',m:1,run:st1R},'3':{s:2,t:'Fase 3',d:'Blocking com 8 pistas',m:10,run:st3},'2DR':{s:2,t:'Fase 2D, reteste',d:'Outra sequência, mesma estrutura',m:9,run:()=>st2D('2DR','Reteste 2D: regra oculta')},corsi:{s:2,t:'Blocos',d:'Memória visuoespacial',m:3,run:stCorsi},dig:{s:2,t:'Dígitos inversos',d:'Memória verbal',m:3,run:stDig},spd:{s:2,t:'Velocidade',d:'Comparação de formas, 60 s',m:1,run:stSpd}};
+const ORDER=['ctx','1A','1B','2T','2CAL','2A','2B','2C','2P','2D','1R','3','2DR','corsi','dig','spd'];
+/* Grava a fase no Polar Lab; só segue quando o banco confirmar. */
+/* Parciais: fase interrompida não pode sumir. Falha aqui nunca atrapalha a tarefa. */
+const partialObj=reason=>{const rows=S.rows.filter(r=>r.stage===CUR);return rows.length?{stage:CUR,submission:SUB,reason,rows}:null};
+async function polarPartial(reason,keep){const o=partialObj(reason);if(!o)return;try{await send('partial',o,keep)}catch(e){}}
+if(POLAR)addEventListener('pagehide',()=>{if(!RUNNING||!CUR)return;const o=partialObj('pagina_fechada');if(o)navigator.sendBeacon('partial',new Blob([JSON.stringify(o)],{type:'application/json'}))});
+if(REMOTE)document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&RUNNING&&CUR)polarPartial('pagina_fechada',true)});
+async function polarSave(id){const body=({stage:id,submission:SUB,v:VERSION,form:S.form,done:S.done[id],ooo:!!S.ooo[id],ctx:S.ctx,res:S.res,rows:S.rows.filter(r=>r.stage===id)});
+ for(;;){try{const r=await send('stage',body);if(r.ok)return;throw new Error('Resposta '+r.status)}
+ catch(e){await new Promise(res=>{app.innerHTML=`<div class="wrap"><h2>Esta fase ainda não foi salva</h2><p>${REMOTE?'Confira sua conexão com a internet e não feche esta página.':'Confira se o Polar Lab continua aberto e não feche esta página.'}</p><p class="mono small">${esc(e.message)}</p><div class="row"><button class="btn pri" id="retry">Tentar novamente</button><button class="btn" id="dl">Baixar uma cópia em JSON</button></div></div>`;$('#retry').onclick=res;$('#dl').onclick=()=>saveFile(`atencao_${S.code}_${id}.json`,JSON.stringify(body))})}}}
+async function runStage(id){CUR=id;ABORT=false;RUNNING=true;SUB=Date.now().toString(36)+Math.random().toString(36).slice(2);CK=0;const idx=ORDER.indexOf(id);S.ooo[id]=ORDER.slice(0,idx).some(k=>STAGE[k].s===STAGE[id].s&&!S.done[k])||undefined;
+ const old=S.rows;const oldDone=S.done[id];S.rows=S.rows.filter(r=>r.stage!==id);delete S.done[id];
+ try{await STAGE[id].run();S.done[id]=new Date().toISOString();save();if(LINKED)await polarSave(id)}
+ catch(e){if(LINKED)await polarPartial(e instanceof Abort?'interrompida':'erro');if(e instanceof Abort){S.rows=old;if(oldDone)S.done[id]=oldDone;toast('Fase interrompida. Nada foi gravado.')}else{S.rows=old;RUNNING=false;app.innerHTML=`<div class="wrap"><h2>A fase parou por um erro</h2><p class="mono small">${esc(e.stack||e)}</p><button class="btn" onclick="home()">Voltar</button></div>`;console.error(e);return}}
+ RUNNING=false;P=null;CUR=null;home()}
+
+/* ---------- início ---------- */
+function nextStage(){return ORDER.find(k=>!S.done[k])}
+function home(){window.scrollTo(0,0);const nx=nextStage();const row=k=>{const s=STAGE[k],d=S.done[k];return`<div class="st ${k===nx?'next':''}"><span class="id">${k==='ctx'?'·':k.replace('2DR','2D′').replace('2CAL','2A').replace('2T','2A').replace('1R','1A′').replace('corsi','WM').replace('dig','WM').replace('spd','VP')}</span><div style="min-width:0"><b>${s.t}</b> <span class="mute small">· ${s.d} · cerca de ${s.m} min</span>${d?` <span class="tag">feita</span>`:''}${S.ooo[k]?` <span class="tag fl">fora de ordem</span>`:''}</div><button class="btn ${k===nx?'pri':''}" data-go="${k}">${d?'Refazer':(k===nx?'Iniciar':'Abrir')}</button></div>`};
+ const sec=(n,tt)=>`<div class="stack"><h3>${tt}</h3><div class="sess">${ORDER.filter(k=>STAGE[k].s===n).map(row).join('')}</div></div>`;
+ const trs=S.rows.filter(r=>r.tipo!=='nota').length;
+ app.innerHTML=`<div class="wrap"><div class="stack"><h1>Projeto Atenção</h1>${REMOTE?'<p>Tarefa de atenção do seu acompanhamento. Faça as partes na ordem, em um lugar tranquilo, sem interrupções e sempre neste mesmo aparelho. Você pode parar entre as partes e voltar depois.</p>':'<p>Tarefa de inferência de regra latente, com as alterações propostas na revisão do protocolo. A ordem das fases é fixa. Use teclado ou toque, em ambiente sem interrupções e sempre no mesmo aparelho.</p>'}<p class="mute small">${S.code&&!REMOTE?`Participante <b>${esc(S.code)}</b> · forma ${S.form} · `:''}${REMOTE?`${trs} registros enviados ao consultório, criptografados.`:POLAR?`${trs} registros salvos no Polar Lab, atualizados ao fim de cada fase.`:`${trs} registros neste navegador. Os dados não saem daqui até você exportar.`}</p></div>
+ ${sec(1,'Sessão 1, cerca de 45 minutos')}${sec(2,'Sessão 2, em outro dia, cerca de 30 minutos')}
+ <div class="row"><button class="btn pri" id="rep" ${LINKED?'hidden':''}>Ver relatório individual</button><button class="btn warn" id="wipe" ${LINKED?'hidden':''}>Apagar todos os dados</button></div>
+ <details ${REMOTE?'hidden':''}><summary>O que foi alterado em relação ao protocolo original</summary><div class="tw" style="margin-top:10px"><table>
+ <tr><th>Fase</th><th>Como está aqui</th></tr>
+ <tr><td>Todas</td><td>Três opções fixas (primeira, segunda, nova); acaso 1/3; escolher a segunda figura conta como lapso. Sequências fixas por forma A ou B. Igualdade definida só pela forma; cor e tamanho variam. Tempo limite de 6 s, com TR medido do início da sequência e das opções.</td></tr>
+ <tr><td>1A</td><td>18 de 20, com pelo menos 9 por regra, em até 6 blocos. Exemplos da instrução usam formas que não entram nas tentativas. Palavra visível durante a escolha.</td></tr>
+ <tr><td>1B</td><td>≥ 90% em dois blocos seguidos, ≥ 8/10 por regra, até 6 blocos. Teste explícito dos símbolos ao final, como medida descritiva. Quem não atinge o critério segue marcado.</td></tr>
+ <tr><td>2A</td><td>Dez símbolos treinados, irrelevantes em validade de 50%. Sete posições fixas com marcadores neutros. Duração da pista em escada 2-para-baixo/1-para-cima. Nas tentativas explícitas, as pistas informativas somem e a palavra aparece. 80 tentativas, sem feedback.</td></tr>
+ <tr><td>2B</td><td>40 tentativas, extensão por blocos até o critério, teste com figuras inéditas, Lua e Sol em intervalo equivalente. Relatório destaca as primeiras tentativas e a inferência por exclusividade mútua.</td></tr>
+ <tr><td>2C</td><td>60 tentativas com duas reversões em janelas (17 a 25 e 39 a 47). Sondas de Losango e Estrela, sem feedback, depois da primeira reversão, para testar se a inversão se transfere.</td></tr>
+ <tr><td>2D</td><td>h = 0,05 e q = 0,80, sequência com 6 trocas. Medida principal comparada ao observador ideal no mesmo feedback, por distância até a troca. Confiança estratificada pela distância até a troca.</td></tr>
+ <tr><td>3</td><td>8 pistas dentro do participante (X1→A, X2→B; X1Y1, X2Y2, W1V1, W2V2). Teste com escolha, nota de preditividade e reconhecimento.</td></tr>
+ </table></div></details></div>`;
+ document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const k=b.dataset.go;if(S.done[k]&&b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar: substitui os dados';return}runStage(k)});
+ $('#rep').onclick=report;$('#wipe').onclick=e=>{const b=e.currentTarget;if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar: apagar tudo, sem volta';return}S=fresh();save();home()}}
+
+/* ---------- análise ---------- */
+function bayes(R,h=.05,q=.8){let b=.5;return R.map(r=>{const p=b;const c=r.papel==='F1'?'A':r.papel==='nova'?'B':null;if(c&&r.fb!=='none'){const e=(c==='A')===(r.fb==='+');const LA=e?q:1-q,LB=e?1-q:q;b=b*LA/(b*LA+(1-b)*LB)}b=(1-h)*b+h*(1-b);return p})}
+function wslsSim(z,flips){let c='A',o=0;z.forEach((zt,i)=>{const cor=c===zt;if(cor)o++;const fb=flips[i]?!cor:cor;if(!fb)c=c==='A'?'B':'A'});return o/z.length}
+const logit=p=>Math.log(p/(1-p)), inv=x=>1/(1+Math.exp(-x));
+function fitModels(R){const D=R.map(r=>({c:r.papel==='F1'?1:r.papel==='nova'?0:null,fb:r.fb}));const n=D.filter(d=>d.c!==null).length;if(n<20)return null;
+ const eps=[0,.02,.05,.1,.2,.3],beta=[.25,.5,1,2,4,8],hz=[.005,.01,.02,.03,.05,.08,.12,.18,.25,.35],kap=[0,.5,1,2];
+ let best={ll:-Infinity};for(const h of hz)for(const B of beta)for(const E of eps)for(const K of kap){let b=.5,ll=0,prev=0;for(const d of D){if(d.c!==null){const p0=inv(B*logit(Math.min(.999,Math.max(.001,b)))+K*prev);const p=Math.max(1e-6,E/2+(1-E)*p0);ll+=Math.log(d.c?p:Math.max(1e-6,1-p));if(d.fb!=='none'){const e=!!d.c===(d.fb==='+');const LA=e?.8:.2;b=b*LA/(b*LA+(1-b)*(1-LA))}prev=d.c?1:-1}b=(1-h)*b+h*(1-b)}if(ll>best.ll)best={ll,h,B,E,K}}
+ const baye={nome:'Bayesiano (h, β, ε, κ)',k:4,ll:best.ll,par:`h = ${num(best.h,3)}, β = ${num(best.B)}, ε = ${num(best.E)}, κ = ${num(best.K)}`,h:best.h};
+ let br={ll:-Infinity};const al=[...Array(20)].map((_,i)=>.05*(i+1)),bb=[1,2,4,8,16,32];for(const a of al)for(const B of bb)for(const E of eps)for(const K of kap){let v=.5,ll=0,prev=0;for(const d of D){if(d.c===null)continue;const p0=inv(B*(v-.5)+K*prev);const p=Math.max(1e-6,E/2+(1-E)*p0);ll+=Math.log(d.c?p:Math.max(1e-6,1-p));if(d.fb!=='none'){const tgt=(!!d.c===(d.fb==='+'))?1:0;v+=a*(tgt-v)}prev=d.c?1:-1}if(ll>br.ll)br={ll,a,B,E,K}}
+ const rw={nome:'Rescorla-Wagner (α, β, ε, κ)',k:4,ll:br.ll,par:`α = ${num(br.a)}, β = ${num(br.B)}, ε = ${num(br.E)}, κ = ${num(br.K)}`};
+ let ws=[0,0],ls=[0,0],last=null;for(const d of D){if(d.c===null)continue;if(last&&last.fb!=='none'){const stay=d.c===last.c;if(last.fb==='+'){ws[1]++;if(stay)ws[0]++}else{ls[1]++;if(stay)ls[0]++}}last=d}
+ const bin=(x,m)=>{if(!m)return 0;const p=Math.min(.999,Math.max(.001,x/m));return x*Math.log(p)+(m-x)*Math.log(1-p)};
+ const w={nome:'Ganha-fica/perde-troca',k:2,ll:bin(ws[0],ws[1])+bin(ls[0],ls[1])+Math.log(.5),par:`P(fica | ganhou) = ${num(ws[0]/(ws[1]||1))}, P(fica | perdeu) = ${num(ls[0]/(ls[1]||1))}`};
+ const all=[baye,rw,w];all.forEach(m=>m.bic=m.k*Math.log(n)-2*m.ll);return{all:all.sort((a,b)=>a.bic-b.bic),n,baye}}
+const tb=(h,r)=>`<div class="tw"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(l=>`<tr>${l.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const kv=o=>`<div class="kv">${o.map(([k,v])=>`<div><span>${k}</span><strong>${v}</strong></div>`).join('')}</div>`;
+const validRT=R=>R.filter(r=>r.tr!==null&&r.tr!==''&&r.tr>=150&&r.acerto).map(r=>r.tr);
+function learnBlock(s,crit){const R=rowsOf(s).filter(r=>r.pos!==undefined);if(!R.length)return'<p class="mute">Não realizada.</p>';const res=S.res[s]||{};const lp=R.filter(r=>r.papel==='F2').length;const om=R.filter(r=>r.omissao).length;const er=k=>R.filter(r=>r.regra===k&&!r.acerto).length;
+ const bl={};R.forEach(r=>{(bl[r.bloco]=bl[r.bloco]||[]).push(r.acerto)});
+ return kv([['Critério',res.passed?`atingido em ${res.blocks} bloco(s)`:`não atingido (${res.blocks} blocos)`],['Tentativas',R.length],['TR mediano (acertos)',ms(median(validRT(R)))],['Erros Repetição / Exclusão',er('A')+' / '+er('B')],['Escolhas da figura 2 (lapso)',lp],['Omissões',om]])+tb(['Bloco','Acertos'],Object.keys(bl).map(k=>[k,`${bl[k].reduce((a,b)=>a+b,0)}/${bl[k].length}`]))}
+function line2(a,b,labels,la,lb){const W=640,H=220,L=40,R_=70,T=12,Bt=34,x=i=>L+i*(W-L-R_)/(labels.length-1),y=v=>T+(1-v)*(H-T-Bt);let g='';[0,.25,.5,.75,1].forEach(v=>g+=`<line x1="${L}" x2="${W-R_}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v*100}</text>`);labels.forEach((l,i)=>g+=`<text x="${x(i)}" y="${H-12}" text-anchor="middle">${l}</text>`);
+ const pth=(d,c)=>{let s='',p=false;d.forEach((v,i)=>{if(isNaN(v)){p=false;return}s+=(p?'L':'M')+x(i)+' '+y(v);p=true});return`<path d="${s}" fill="none" stroke="${c}" stroke-width="2"/>`+d.map((v,i)=>isNaN(v)?'':`<circle cx="${x(i)}" cy="${y(v)}" r="4.5" fill="${c}" stroke="var(--bg)" stroke-width="2" data-tip="${labels[i]} tentativas depois da troca: ${pct(v)}"/>`).join('')};
+ const end=(d,lbl)=>{let i=d.length-1;while(i>=0&&isNaN(d[i]))i--;return i<0?'':`<text x="${x(i)+10}" y="${y(d[i])+4}" style="fill:var(--ink)">${lbl}</text>`};
+ return`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Acurácia por distância até a troca de regra">${g}${pth(b,'var(--s2)')}${pth(a,'var(--s1)')}${end(a,la)}${end(b,lb)}<text x="${L}" y="${T-2}">% acerto</text></svg>`}
+function timeline(R,bel){const W=640,H=190,L=40,Rr=12,T=14,Bt=26,n=R.length,x=i=>L+(i+.5)*(W-L-Rr)/n,bw=(W-L-Rr)/n,y=v=>T+(1-v)*(H-T-Bt);let g='';R.forEach((r,i)=>{const zA=r.regra==='A';g+=`<rect x="${L+i*bw}" y="${T}" width="${bw+.4}" height="${H-T-Bt}" fill="var(--${zA?'bandA':'bandB'})"/>`});[0,.5,1].forEach(v=>g+=`<text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v===1?'Rep':v===0?'Exc':'0,5'}</text>`);[30,60,90,120].forEach(v=>g+=`<text x="${L+v*bw}" y="${H-8}" text-anchor="end">${v}</text>`);
+ g+=`<path d="${bel.map((b,i)=>(i?'L':'M')+x(i)+' '+y(b)).join('')}" fill="none" stroke="var(--s2)" stroke-width="2"/>`;
+ R.forEach((r,i)=>{if(r.papel==='F1'||r.papel==='nova'){const v=r.papel==='F1'?.97:.03;g+=`<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${r.acerto?'var(--s1)':'none'}" stroke="var(--s1)" stroke-width="1"/>`}});
+ R.forEach((r,i)=>g+=`<rect x="${L+i*bw}" y="${T}" width="${bw+.4}" height="${H-T-Bt}" fill="transparent" data-tip="Tentativa ${i+1}: regra ${RN[r.regra]}, resposta ${r.papel||'omissão'}, feedback ${r.fb}, crença ideal em Repetição ${num(bel[i])}"/>`);
+ return`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Regra oculta, escolhas e crença do observador ideal ao longo de 120 tentativas">${g}</svg><div class="legend"><span><i style="background:var(--bandA)"></i>Regra vigente: Repetição</span><span><i style="background:var(--bandB)"></i>Regra vigente: Exclusão</span><span><i style="background:var(--s2);height:3px"></i>Crença do observador ideal</span><span><i style="background:var(--s1);height:8px;width:8px;border-radius:50%"></i>Sua escolha (vazia = errada)</span></div>`}
+function rep2D(key){const R=rowsOf(key).sort((a,b)=>a.n-b.n);if(R.length<120)return'<p class="mute">Não realizada.</p>';const bel=bayes(R);const idealOK=bel.map((b,i)=>b===.5?.5:((b>.5?'A':'B')===R[i].regra?1:0));const q=make2D(key);const ws=wslsSim(q.z,q.flips);
+ const valid=R.filter(r=>!r.omissao);const acc=mean(R.map(r=>r.acerto));const bins=[[0,0],[1,1],[2,2],[3,3],[4,6],[7,1e9]],lbl=['0','1','2','3','4–6','7+'];const me=bins.map(([a,b])=>mean(R.filter(r=>r.lag>=a&&r.lag<=b).map(r=>r.acerto))),idl=bins.map(([a,b])=>mean(idealOK.filter((_,i)=>R[i].lag>=a&&R[i].lag<=b)));
+ const fit=fitModels(R);const co=R.filter(r=>r.conf!=='');const cf=bins.map(([a,b])=>mean(co.filter(r=>r.lag>=a&&r.lag<=b).map(r=>r.conf)));
+ const agr=mean(R.map((r,i)=>{if(r.papel!=='F1'&&r.papel!=='nova'||bel[i]===.5)return NaN;return (r.papel==='F1')===(bel[i]>.5)?1:0}).filter(x=>!isNaN(x)));
+ return kv([['Sua acurácia',pct(acc,1)],['Ideal, mesma evidência',pct(mean(idealOK),1)],['Ganha-fica/perde-troca, simulado',pct(ws,1)],['Concordância com o ideal',pct(agr,1)],['Escolhas da figura 2',R.filter(r=>r.papel==='F2').length],['TR mediano',ms(median(valid.filter(r=>r.tr>=150).map(r=>r.tr)))]])+
+ `<div>${timeline(R,bel)}</div><h3>Acerto por distância até a troca</h3><div>${line2(me,idl,lbl,'Você','Ideal')}</div>`+
+ tb(['Tentativas após a troca',...lbl],[['Você',...me.map(v=>pct(v))],['Ideal',...idl.map(v=>pct(v))],['Confiança média (1 a 4)',...cf.map(v=>num(v,1))]])+
+ (fit?`<h3>Ajuste de modelos (${fit.n} escolhas)</h3>`+tb(['Modelo','BIC','Parâmetros'],fit.all.map(m=>[m.nome,num(m.bic,1),m.par]))+`<p class="mute small">Menor BIC indica melhor ajuste. O h verdadeiro é 0,05. Com 120 tentativas de uma única pessoa, trate esses parâmetros como indicativos.</p>`:'')}
+function rep2C(){const all=rowsOf('2C');if(!all.length)return'<p class="mute">Não realizada.</p>';const R=all.filter(r=>!r.sonda).sort((a,b)=>a.n-b.n);const res=S.res['2C'];const revs=[res.r1,res.r2];const lines=revs.map((r,ix)=>{const end=ix===0?res.r2:61;const seg=R.filter(x=>x.n>=r&&x.n<end);let crit=null,run=0;for(let i=0;i<seg.length;i++){run=seg[i].acerto?run+1:0;if(run===4){crit=i+1;break}}
+  const fe=seg.findIndex(x=>x.fb==='-');let inf='–';if(fe>=0){const o=seg.slice(fe+1).find(x=>x.pista!==seg[fe].pista);if(o)inf=o.acerto?'acertou':'errou'}
+  let pN=0,pK=0;seg.forEach((x,i)=>{const pv=seg.slice(0,i).reverse().find(y=>y.pista===x.pista);if(pv&&pv.fb==='-'){pN++;if(!x.acerto&&x.papel!=='F2')pK++}});
+  const rtA=median(R.filter(x=>x.n>=r-8&&x.n<r&&x.tr>=150).map(x=>x.tr)),rtB=median(R.filter(x=>x.n>=r&&x.n<r+8&&x.tr>=150).map(x=>x.tr));
+  return[`${ix+1}ª, na tentativa ${r}`,crit?crit:`mais de ${seg.length} (censurado)`,inf,pN?`${pK}/${pN}`:'–',ms(rtA),ms(rtB)]});
+ const pr=all.filter(r=>r.sonda);const invd=pr.filter(r=>r.papel===(r.regra==='A'?'nova':'F1')).length;
+ const stable=R.filter(x=>x.n<res.r1);
+ return tb(['Reversão','Tentativas até 4 acertos seguidos','Primeira tentativa da outra pista após o erro','Repetiu regra antiga após erro','TR antes','TR depois'],lines)+kv([['Erro antes da 1ª reversão',pct(1-mean(stable.map(x=>x.acerto)))],['Sondas invertidas (Losango/Estrela)',`${invd} de ${pr.length}`]])+`<p class="mute small">A primeira tentativa da outra pista é o marcador de estado latente: acertar sem ter recebido erro naquela pista sugere que você inverteu o par inteiro. As sondas testam se a inversão se transferiu para símbolos que não foram revertidos.</p>`}
+function rep2A(){const R=rowsOf('2A');if(!R.length)return'<p class="mute">Não realizada.</p>';const f=(c,i)=>R.filter(r=>r.cond===c&&r.instr===i);const rows=['C1','C2','C3','C4'].map(c=>{const e=f(c,'explicita'),n=f(c,'inferida');const ae=mean(e.map(r=>r.acerto)),an=mean(n.map(r=>r.acerto));return[{C1:'C1 · 1 informativa',C2:'C2 · 3 informativas',C3:'C3 · 1 + 4 irrelevantes',C4:'C4 · 3 + 4 irrelevantes'}[c],pct(ae),pct(an),pct(ae-an),ms(median(validRT(e))),ms(median(validRT(n)))]});
+ const c=S.res['2CAL']||{};return kv([['Duração calibrada da pista',(S.res['2A'].cueMs)+' ms'],['Limiar da escada',c.thr?c.thr+' ms':'–'],['Reversões na escada',c.reversoes??'–'],['Lapsos (figura 2)',R.filter(r=>r.papel==='F2').length]])+tb(['Condição','Acerto explícita','Acerto inferida','Custo de seleção','TR explícita','TR inferida'],rows)}
+function rep2B(){const R=rowsOf('2B');if(!R.length)return'<p class="mute">Não realizada.</p>';const L=R.filter(r=>!r.tipo).sort((a,b)=>a.bloco-b.bloco||a.n-b.n);const first10=L.slice(0,10);const a=L[0].pista;const o=L.find(r=>r.pista!==a);const T=t=>R.filter(r=>r.tipo===t);const res=S.res['2B'];
+ return kv([['Acerto nas 10 primeiras',pct(mean(first10.map(r=>r.acerto)))],['Primeira ocorrência do 2º símbolo',o?(o.acerto?'acertou':'errou'):'–'],['Tentativas totais de aprendizagem',L.length],['Critério',res.passed?'atingido':'não atingido'],['Teste, figuras inéditas',pct(mean(T('teste_novas').map(r=>r.acerto)))],['Teste, Lua e Sol',pct(mean(T('teste_antigas').map(r=>r.acerto)))]])+`<p class="mute small">A primeira ocorrência do segundo símbolo mede exclusividade mútua: saber o primeiro permite deduzir o segundo. É uma única tentativa por aplicação.</p>`}
+function rep3(){const R=rowsOf('3');if(!R.length)return'<p class="mute">Não realizada.</p>';const P=k=>mean(R.filter(r=>r.tipo==='teste_'+k).map(r=>r.acerto));const not=k=>mean(R.filter(r=>r.tipo==='nota'&&r.pista[0]===k).map(r=>r.regra==='A'?4-r.resposta:r.resposta-4));const rec=k=>mean(R.filter(r=>r.tipo==='reconhecimento'&&r.pista[0]===k).map(r=>r.resposta));
+ const foil=mean(R.filter(r=>r.tipo==='reconhecimento'&&r.antigo===0).map(r=>r.resposta));
+ return tb(['Pista','Escolha esperada','Nota (−3 a +3)','Reconhecimento'],[['X (pré-treinada)',pct(P('X')),num(not('X'),1),pct(rec('X'))],['Y (bloqueada)',pct(P('Y')),num(not('Y'),1),pct(rec('Y'))],['W (composto controle)',pct(P('W')),num(not('W'),1),pct(rec('W'))],['V (composto controle)',pct(P('V')),num(not('V'),1),pct(rec('V'))],['Símbolos não apresentados','–','–',pct(foil)]])+kv([['BI (escolha): V − Y',pct(P('V')-P('Y'))],['BI (nota): V − Y',num(not('V')-not('Y'),1)]])+`<p class="mute small">Valores positivos de BI indicam menos aprendizagem sobre Y do que sobre V. Interprete só se X e V estiverem acima do acaso.</p>`}
+function repCtl(){const c=S.res.corsi,d=S.res.dig;const sp=rowsOf('spd');return kv([['Blocos, maior sequência',c?c.span:'–'],['Dígitos inversos, maior sequência',d?d.span:'–'],['Velocidade, acertos em 60 s',sp.length?sp.filter(r=>r.acerto).length:'–'],['Velocidade, TR mediano',sp.length?ms(median(sp.filter(r=>r.tr>=150&&r.acerto).map(r=>r.tr))):'–']])}
+function toCSV(){const keys=[...new Set(S.rows.flatMap(r=>Object.keys(r)))];const q=v=>{if(v===undefined||v===null)return'';v=String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return keys.join(',')+'\n'+S.rows.map(r=>keys.map(k=>q(r[k])).join(',')).join('\n')}
+async function saveFile(name,data){try{const d=window.claude&&await window.claude.use('downloads');if(d){await d.save({filename:name,data});return toast('Arquivo salvo.')}}catch(e){if(e&&e.code==='declined')return toast('Download cancelado.')}
+ try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data]));a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Download iniciado.')}catch(e){toast('Use o botão de copiar.')}}
+function report(){window.scrollTo(0,0);const sc=(t,b)=>`<section class="rep"><h2>${t}</h2>${b}</section>`;
+ app.innerHTML=`<div class="wrap"><div class="row"><button class="btn" id="back">Voltar</button></div><div class="stack"><h1>Relatório individual</h1><p class="mute">${S.code?esc(S.code)+' · ':''}forma ${S.form}. Não há valores de referência: esta versão ainda não foi validada em amostra, e os únicos parâmetros de comparação são o acaso (33%) e o observador ideal.</p>${Object.keys(S.ooo).some(k=>S.ooo[k])?'<p class="small" style="color:var(--s2)">Há fases feitas fora de ordem. Elas estão marcadas nos dados.</p>':''}</div>
+ ${sc('Fase 2D: inferência sem pista',rep2D('2D'))}${sc('Reteste da 2D',rep2D('2DR'))}${sc('Fase 2C: reversão',rep2C())+sc('Fase 2P: pista probabilística',rep2P())}${sc('Fase 2A: generalização',rep2A())}${sc('Fase 2B: reassociação',rep2B())}${sc('Fase 3: blocking',rep3())}${sc('Fase 1A',learnBlock('1A'))}${sc('Fase 1B',learnBlock('1B')+(rowsOf('1B').some(r=>r.tipo==='checagem')?`<p class="small">Teste explícito dos símbolos: ${rowsOf('1B').filter(r=>r.tipo==='checagem').map(r=>`${NOME[r.pista]} → ${RN[r.resposta]} (${r.acerto?'certo':'errado'})`).join(' · ')}</p>`:''))}${sc('Memória e velocidade',repCtl())}
+ <section class="rep"><h2>Exportar dados</h2><p class="mute small">${S.rows.length} linhas, tentativa a tentativa.</p><div class="row"><button class="btn pri" id="csv">Baixar CSV</button><button class="btn" id="js">Baixar JSON</button><button class="btn" id="cp">Copiar CSV</button></div><textarea id="tx" readonly aria-label="Dados em CSV" hidden></textarea></section></div>`;
+ $('#back').onclick=home;const stamp=()=>`atencao_${S.code||'anon'}_${S.form}`;$('#csv').onclick=()=>saveFile(stamp()+'.csv',toCSV());$('#js').onclick=()=>saveFile(stamp()+'.json',JSON.stringify(S,null,1));
+ $('#cp').onclick=()=>{const t=toCSV();navigator.clipboard.writeText(t).then(()=>toast('CSV copiado.')).catch(()=>{const x=$('#tx');x.hidden=false;x.value=t;x.select();toast('Selecione e copie o texto.')})}}
+let tip;document.addEventListener('mousemove',e=>{const t=e.target.closest&&e.target.closest('[data-tip]');if(t){if(!tip){tip=document.createElement('div');tip.className='tip';document.body.append(tip)}tip.textContent=t.dataset.tip;tip.style.left=Math.min(innerWidth-250,e.clientX+12)+'px';tip.style.top=(e.clientY+14)+'px'}else if(tip){tip.remove();tip=null}});
+window.PA={dbg:{shell,paintCue,paintSeq,trial,RNG,make2D,set sp(v){SP=v}},auto(p=.85,speed=200){SP=speed;AUTO=t=>{const good=t.order.indexOf(t.rule==='A'?0:2);return String(Math.random()<p?good:(good+1+Math.floor(Math.random()*2))%3)}},off(){SP=1;AUTO=null},run:runStage,get S(){return S},report,home,rep2D};
+function consent(){app.innerHTML=`<div class="wrap"><h2>Antes de começar</h2><p>Esta tarefa faz parte da sua avaliação com o seu médico. Ela observa como você aprende e usa regras simples, e leva cerca de 45 minutos em um dia e 30 minutos em outro.</p><p>Suas respostas e tempos de resposta são enviados ao consultório de forma criptografada: só o consultório consegue abri-los. Este site apenas repassa os dados e os apaga depois que o consultório os recebe.</p><p>Você pode parar quando quiser e continuar depois, neste mesmo aparelho e navegador.</p><label style="flex-direction:row;align-items:center;gap:10px;color:var(--ink);font-size:16px"><input type="checkbox" id="ok" style="width:auto"> Li e concordo em participar.</label><div class="row"><button class="btn pri" id="go" disabled>Continuar</button></div></div>`;$('#ok').onchange=()=>{$('#go').disabled=!$('#ok').checked};$('#go').onclick=()=>{S.consent=new Date().toISOString();save();home()}}
+load();
+if(REMOTE&&!INVITE)app.innerHTML='<div class="wrap"><h2>Link inválido ou incompleto</h2><p>Abra o link exatamente como recebeu, ou peça um novo ao consultório.</p></div>';
+else if(REMOTE&&!S.consent)consent();
+else home();
+</script>

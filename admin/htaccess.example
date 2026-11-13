@@ -1,0 +1,6 @@
+# Referência de segurança quando servido atrás de proxy Apache
+<IfModule mod_headers.c>
+    Header set Referrer-Policy "no-referrer"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+Options -Indexes
